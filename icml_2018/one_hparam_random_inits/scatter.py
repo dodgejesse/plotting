@@ -11,7 +11,7 @@ def read_data(f_name):
         to_return.append(float(num.strip()))
     return to_return
 
-def make_plot():
+def make_dan_plot():
     matplotlib.rcParams.update({'font.size':15})
     fig = plt.figure(figsize=(10,10))
     cur_ax = fig.add_subplot(1,1,1)
@@ -36,7 +36,27 @@ def make_plot():
     print('saving to {}'.format(save_loc))
     plt.savefig(save_loc)
 
+def make_cnn_plot():
+    matplotlib.rcParams.update({'font.size':15})
+    fig = plt.figure(figsize=(10,10))
+    cur_ax = fig.add_subplot(1,1,1)
+
+
+    X = read_data('cnn_times.txt')
+    Y = read_data('cnn_accuracies.txt')
+    
+    cur_ax.scatter(X,Y)
+    
+    cur_ax.set_title('109 random restarts of CNN, default hyperparameter settings\nbinary Stanford sentiment text cat, 5-fold CV stopping criteria\nrandomness comes from dropout=0.3 and random inits')
+    cur_ax.set_ylabel('accuracy')
+    cur_ax.set_xlabel('training and evaluation time (seconds)')
+    cur_ax.legend()
+    
+    save_loc = 'plots/100_random_restarts_cnn_binary.pdf'
+    print('saving to {}'.format(save_loc))
+    plt.savefig(save_loc)
+
 
 
 if __name__ == "__main__":
-    make_plot()
+    make_cnn_plot()
