@@ -12,10 +12,10 @@ import json
 
 def get_search_algos():
     search_algos = OrderedDict()
-    search_algos['spearmint_seq'] = {'name':'spearmint_seq', 'color':'C3'}
-    search_algos['spearmint_2'] = {'name':'spearmint_2', 'color':'C5'}
-    search_algos['spearmint_kover2'] = {'name':'spearmint_kover2', 'color':'C2'}
-    search_algos['mixed_dpp_rbf'] = {'name':'mixed_dpp_rbf', 'color':'C0'}
+    search_algos['spearmint_seq'] = {'name':'Sequential Spearmint', 'color':'C3'}
+    search_algos['spearmint_2'] = {'name':'Spearmint Batch Size 2', 'color':'C1'}
+    search_algos['spearmint_kover2'] = {'name':'Spearmint Batch Size 10', 'color':'C2'}
+    search_algos['mixed_dpp_rbf'] = {'name':'k-DPP-RBF', 'color':'C0'}
     
     #search_algos['bayes_opt'] = 'bayes_opt'
     #search_algos['random'] = 'random'
@@ -50,7 +50,7 @@ def make_line_plot():
     
     fig = plt.figure()
     cur_ax = fig.add_subplot(1,1,1)
-
+    matplotlib.rcParams.update({'font.size': 11})
     
     scatter_with_vert_lines.add_scatter(all_info, search_algos, space, cur_ax)
     plt.tight_layout()

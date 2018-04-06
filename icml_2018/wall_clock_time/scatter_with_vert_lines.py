@@ -9,7 +9,7 @@ def add_scatter(data, order, space, cur_ax, ylim_lower=None, ylim_upper=None):
     for algo in order:
         if algo in data:
             
-            cur_ax.scatter(data[algo]['durs'],data[algo]['accs'], marker='.', s=5, color=order[algo]['color'])
+            cur_ax.scatter(data[algo]['durs'],data[algo]['accs'], marker='.', s=6, color=order[algo]['color'])
 
     min_acc = 1
     max_acc = 0
@@ -31,6 +31,8 @@ def add_scatter(data, order, space, cur_ax, ylim_lower=None, ylim_upper=None):
             min_and_max_acc = [min_acc, max_acc]
             cur_ax.plot(cur_avg_dur, min_and_max_acc, color=order[algo]['color'])
 
+    cur_ax.locator_params(nbins=7)
+    cur_ax.tick_params(labelsize=11)
     
     #for algo in order:
     #    if algo in data:
@@ -42,5 +44,6 @@ def add_scatter(data, order, space, cur_ax, ylim_lower=None, ylim_upper=None):
 
 
 
-    cur_ax.set_xlim(left=0, right = max_dur + 100)
+    cur_ax.set_xlim(left=0, right = 20100)
+    cur_ax.set_ylim(bottom= .765)
 
