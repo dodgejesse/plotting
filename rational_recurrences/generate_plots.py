@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib
+
 import os        
 import get_data_from_rational_recurrence.load_groups_norms as load_norms
 
