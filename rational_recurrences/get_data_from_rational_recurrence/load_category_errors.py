@@ -23,7 +23,7 @@ def get_data():
                 data[d_out][pattern] = {}
 
 
-            for lr in [0.00025, 0.001]:
+            for lr in [0.001]:
                 if lr not in data[d_out][pattern]:
                     data[d_out][pattern][lr] = {}
 
