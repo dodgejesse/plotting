@@ -5,8 +5,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import collections
 
+x_categorical = True
+
 def main():
-    data, worst, best = load_errors.get_data()
+    data, worst, best, learned_structures = load_errors.get_data()
 
     train_nums = load_errors.num_training_examples()
     num_colors = len(train_nums)
@@ -19,7 +21,6 @@ def main():
 
 # returns a map from approach name to [xs, ys] list.
 def get_unique_approaches(data, train_nums, lr, d_outs):
-    x_categorical = True
     data_per_approach = {}
     for d_out in d_outs:
         for pattern in data[d_out]:
@@ -28,32 +29,23 @@ def get_unique_approaches(data, train_nums, lr, d_outs):
                     continue
                     
                 cur_approach_name = sparsity + "," + pattern
-
                 
-                if cur_approach_name in data_per_approach:
-                    import pdb; pdb.set_trace()
-                    print(cur_approach_name)
+                assert cur_approach_name not in data_per_approach
                 
-
                 xs = []
                 ys = []
+                sorted_data = []
                 for category in data[d_out][pattern][lr][sparsity]:
-                    ys.append(data[d_out][pattern][lr][sparsity][category])
-                    xs.append(train_nums[category])
+                    sorted_data.append([train_nums[category], data[d_out][pattern][lr][sparsity][category]])
+                sorted_data.sort()
+                sorted_data = np.asarray(sorted_data)
 
+                ys = sorted_data[:, 1]
                 if x_categorical:
-                    sorted_data = []
-                    for i in range(len(xs)):
-                        if xs[i] is not None:
-                            sorted_data.append([xs[i], ys[i]])
-                    sorted_data.sort()
-                    sorted_data = np.asarray(sorted_data)
- 
-                    xs = range(len(sorted_data[:,0]))
-                    ys = sorted_data[:,1]
-
-                data_per_approach[cur_approach_name] = [xs, ys]
-                    
+                    data_per_approach[cur_approach_name] = [range(len(sorted_data[:,0])), ys, sorted_data[:,0]]
+                else:
+                    data_per_approach[cur_approach_name] = [np.log(sorted_data[:,0]), ys, sorted_data[:,0]]
+    
 
     return data_per_approach
 
@@ -90,10 +82,17 @@ def one_plot(data, d_out):
     for approach in data:
         counter = counter + 1
         cur_ax = fig.add_subplot(len(data), 1, counter)
-        cur_ax.bar(data[approach][0], data[approach][1])
+        cur_ax.plot(data[approach][0], data[approach][1])
         
         cur_ax.set_ylabel(names[approach], rotation=75)
-        cur_ax.set_xticklabels([])    
+
+        if names[approach] == "even mix":
+            cur_ax.set_xticklabels(data[approach][2], rotation=75)
+            cur_ax.set_xticks(range(len(data[approach][2])))
+            
+        else:
+            cur_ax.set_xticklabels([])
+            cur_ax.set_xticks([])
 
 
     save_plot(d_out)
