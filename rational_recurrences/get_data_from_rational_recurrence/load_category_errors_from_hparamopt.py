@@ -11,32 +11,28 @@ np.set_printoptions(edgeitems=3,infstr='inf',
                     suppress=True, threshold=1000, formatter=None)
 
 
-def get_data(get_category_data=True):
+def get_data():
     learned_structures = {}
     worst = 0
     best = 1
     data = {}
-    if get_category_data:
-        categories = get_categories()
-    else:
-        categories = [""]
+    categories = get_categories()
 
     for category in categories:
-        if category == "":
-            file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon/only_last_cs/hparam_opt/"
-        else:
-            file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "only_last_cs/hparam_opt/"
-        file_names = glob.glob(file_base + "*none_*.txt")
+        file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "only_last_cs/hparam_opt/"
+        file_name_endings = ["*none_*.txt", "*learned_*.txt", "*rho_entropy_*"]
+        for file_name_ending in file_name_endings:
+            file_names = glob.glob(file_base + file_name_ending)
 
-        if len(file_names) != 0:
-            for file_name in file_names:
-                cur_dev = load_from_file(file_name)
-                add_point_to_data(data, cur_dev, file_name, category)
+            if len(file_names) != 0:
+                for file_name in file_names:
+                    cur_dev = load_from_file(file_name)
+                    add_point_to_data(data, cur_dev, file_name, category)
 
-                if cur_dev < best:
-                    best = cur_dev
-                if cur_dev > worst:
-                    worst = cur_dev
+                    if cur_dev < best:
+                        best = cur_dev
+                    if cur_dev > worst:
+                        worst = cur_dev
     return data, categories, worst, best, learned_structures
 
 def add_point_to_data(data, point, file_name, category):
@@ -48,6 +44,9 @@ def add_point_to_data(data, point, file_name, category):
         print("PROBLEMS!")
         assert False
 
+    # this is a bit of a hack
+    if sparsity == "learned":
+        pattern = "1-gram,2-gram,3-gram,4-gram"
     d_out = sum([int(x) for x in d_out.split(",")])
     if d_out not in data:
         data[d_out] = {}
@@ -72,6 +71,7 @@ def try_load_data(data, category, **kwargs):
 
 def num_training_examples():
     train_nums = {
+        "original_mix/": 20001,
         "apparel/": 1082,
         "automotive/": 122,
         "baby/": 720,
@@ -105,13 +105,19 @@ def load_from_file(path):
     with open(path, "r") as f:
         lines = f.readlines()
 
-    best_valid_line = lines[-2]
-    assert "best_valid" in best_valid_line, str(args)
+    if False:
+        err = lines[-2]
+        assert "best_valid" in err, str(args)
+    else:
+        err = lines[-1]
+        assert "test_err" in err, str(args)
     
-    return float(best_valid_line.split(" ")[1])
+    return float(err.split(" ")[1])
 
 if __name__ == "__main__":
-    get_data()
+    data, categories, worst, best, learned_structures = get_data()
+    import pdb; pdb.set_trace()
+    print(get_data.keys())
     sys.exit()
     
     data, worst, best, learned_structures = get_data(d_outs = ["24"],
