@@ -2,6 +2,7 @@ import sys
 sys.path.append('/home/jessedd/projects/rational-recurrences/classification')
 from experiment_params import ExperimentParams, get_categories
 import load_learned_ngrams
+import load_groups_norms
 import numpy as np
 import os, re
 import glob
@@ -17,23 +18,25 @@ def get_data():
     best = 1
     data = {}
     categories = get_categories()
+    
+    for base in ["", "structure_search/"]:
+        for category in categories:
+            #file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "only_last_cs/hparam_opt/"
+            file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category
+            file_base += "all_cs_and_equal_rho/hparam_opt/" + base
+            file_name_endings = ["*none_*.txt", "*learned_*.txt", "*rho_entropy_*", "*regstrmultofloss=*_*"]
+            for file_name_ending in file_name_endings:
+                file_names = glob.glob(file_base + file_name_ending)
 
-    for category in categories:
-        #file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "only_last_cs/hparam_opt/"
-        file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "all_cs_and_equal_rho/hparam_opt/"
-        file_name_endings = ["*none_*.txt", "*learned_*.txt", "*rho_entropy_*"]
-        for file_name_ending in file_name_endings:
-            file_names = glob.glob(file_base + file_name_ending)
+                if len(file_names) != 0:
+                    for file_name in file_names:
+                        cur_dev = load_from_file(file_name)
+                        add_point_to_data(data, cur_dev, file_name, category)
 
-            if len(file_names) != 0:
-                for file_name in file_names:
-                    cur_dev = load_from_file(file_name)
-                    add_point_to_data(data, cur_dev, file_name, category)
-
-                    if cur_dev < best:
-                        best = cur_dev
-                    if cur_dev > worst:
-                        worst = cur_dev
+                        if cur_dev < best:
+                            best = cur_dev
+                        if cur_dev > worst:
+                            worst = cur_dev
     return data, categories, worst, best, learned_structures
 
 def add_point_to_data(data, point, file_name, category):
@@ -48,12 +51,11 @@ def add_point_to_data(data, point, file_name, category):
 
     num_params = count_params(file_name, d_out, pattern)
     # this is a bit of a hack
-    if sparsity == "learned":
+    if sparsity == "learned" or sparsity == "l1-learned":
         pattern = "1-gram,2-gram,3-gram,4-gram"
-
-
-    d_out = sum([int(x) for x in d_out.split(",")])
-
+        d_out = 24
+    else:
+        d_out = sum([int(x) for x in d_out.split(",")])
 
     
     if d_out not in data:
@@ -71,13 +73,15 @@ def add_point_to_data(data, point, file_name, category):
     else:
         data[d_out][pattern][sparsity][category].append(point)
 
+# note this will have problems!
 def count_params(file_name, d_out, pattern):
-
-    if "rho" in file_name.split("/")[-1] or "learned" in file_name.split("/")[-1]:
+    if "rho-entropy" in file_name.split("/")[-1] or "regstrmultofloss" in file_name.split("/")[-1]:
+        
         ngram_counts = [0,0,0,0]
-        if "rho" in file_name:
-            import pdb; pdb.set_trace()
+        if "rho-entropy" in file_name:
             pattern, d_out, frac_under_pointnine = load_learned_ngrams.from_file(file_name, .9)
+        elif "regstrmultofloss" in file_name:
+            pattern = load_groups_norms.from_file(file_name)
 
         split_pattern = pattern.split(",")
         split_d_out = d_out.split(",")
@@ -87,6 +91,7 @@ def count_params(file_name, d_out, pattern):
             # to get the cur ngram num
             cur_ngram_num = int(split_pattern[i].split("-")[0]) - 1
             ngram_counts[cur_ngram_num] = int(split_d_out[i])
+        
 
     else:
         ngram_counts = d_out.split(",")
