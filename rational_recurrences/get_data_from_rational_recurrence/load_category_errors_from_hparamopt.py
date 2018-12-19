@@ -19,7 +19,8 @@ def get_data():
     categories = get_categories()
 
     for category in categories:
-        file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "only_last_cs/hparam_opt/"
+        #file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "only_last_cs/hparam_opt/"
+        file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "all_cs_and_equal_rho/hparam_opt/"
         file_name_endings = ["*none_*.txt", "*learned_*.txt", "*rho_entropy_*"]
         for file_name_ending in file_name_endings:
             file_names = glob.glob(file_base + file_name_ending)
@@ -44,10 +45,17 @@ def add_point_to_data(data, point, file_name, category):
         print("PROBLEMS!")
         assert False
 
+
+    num_params = count_params(file_name, d_out, pattern)
     # this is a bit of a hack
     if sparsity == "learned":
         pattern = "1-gram,2-gram,3-gram,4-gram"
+
+
     d_out = sum([int(x) for x in d_out.split(",")])
+
+
+    
     if d_out not in data:
         data[d_out] = {}
     if pattern not in data[d_out]:
@@ -56,9 +64,42 @@ def add_point_to_data(data, point, file_name, category):
         data[d_out][pattern][sparsity] = {}
     if category not in data[d_out][pattern][sparsity]:
         data[d_out][pattern][sparsity][category] = []
-    data[d_out][pattern][sparsity][category].append(point)
+
+    keep_num_params = False
+    if keep_num_params:
+        data[d_out][pattern][sparsity][category].append((point, num_params))
+    else:
+        data[d_out][pattern][sparsity][category].append(point)
+
+def count_params(file_name, d_out, pattern):
+
+    if "rho" in file_name.split("/")[-1] or "learned" in file_name.split("/")[-1]:
+        ngram_counts = [0,0,0,0]
+        if "rho" in file_name:
+            import pdb; pdb.set_trace()
+            pattern, d_out, frac_under_pointnine = load_learned_ngrams.from_file(file_name, .9)
+
+        split_pattern = pattern.split(",")
+        split_d_out = d_out.split(",")
+
+        assert len(split_pattern) == len(split_d_out)
+        for i in range(len(split_pattern)):
+            # to get the cur ngram num
+            cur_ngram_num = int(split_pattern[i].split("-")[0]) - 1
+            ngram_counts[cur_ngram_num] = int(split_d_out[i])
+
+    else:
+        ngram_counts = d_out.split(",")
+
+    num_params = 0
+    for i in range(len(ngram_counts)):
+        num_params = num_params + (i + 1) * int(ngram_counts[i])
 
 
+    if "learned" in file_name:
+        print(pattern, d_out, num_params)
+    return num_params
+    
 def try_load_data(data, category, **kwargs):
     args = ExperimentParams(**kwargs)
     try:
@@ -105,7 +146,7 @@ def load_from_file(path):
     with open(path, "r") as f:
         lines = f.readlines()
 
-    if False:
+    if True:
         err = lines[-2]
         assert "best_valid" in err, str(args)
     else:
@@ -116,24 +157,15 @@ def load_from_file(path):
 
 if __name__ == "__main__":
     data, categories, worst, best, learned_structures = get_data()
-    import pdb; pdb.set_trace()
-    print(get_data.keys())
-    sys.exit()
-    
-    data, worst, best, learned_structures = get_data(d_outs = ["24"],
-             patterns = ["4-gram"],
-             lrs = [0.001],
-             sparsities = ["rho_entropy"],
-             suffixes = ["_0","_1","_2","_3"])
-    import pdb; pdb.set_trace()
-    train_nums = num_training_examples()
-    print(learned_structures)
-    for d_out in ['24', '256']:
-        sorted_data = []
-        for category in learned_structures[d_out]:
-            sorted_data.append([train_nums[category], learned_structures[d_out][category]])
-        sorted_data.sort()
-        for i in range(len(sorted_data)):
-            print(sorted_data[i][1])
-        print("")
+
+    print("")
+
+    for pattern in data[24]:
+        for sparsity in data[24][pattern]:
+            for dataset in data[24][pattern][sparsity]:
+                if len(data[24][pattern][sparsity][dataset]) > 5:
+                    print(pattern, sparsity, dataset)
         
+    import pdb; pdb.set_trace()
+    print("")
+    sys.exit()

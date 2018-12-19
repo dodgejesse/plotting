@@ -6,18 +6,17 @@ import get_data_from_rational_recurrence.load_groups_norms as load_norms
 import numpy as np
 
 def main():
-
-    args = ExperimentParams()
+            
     norms = load_norms.load_from_file(args)
 
 
     
-    threshold = 0.002
+    threshold = 0.1
     #threshold = min(norms[-1][:,0])
-    learned_ngrams = norms[-1] > threshold
+    learned_ngrams = norms > threshold
     ngram_counts = [0] * (len(learned_ngrams[0]) + 1)
     weirdos = []
-    import pdb; pdb.set_trace()
+
     for i in range(len(learned_ngrams)):
         cur_ngram = 0
         cur_weird = False

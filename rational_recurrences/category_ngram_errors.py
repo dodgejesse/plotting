@@ -106,6 +106,7 @@ def one_plot(worst, best, data, categories, train_nums, d_out, colors):
 
     num_best_sparsity = collections.Counter()
     for category in best_cat_val:
+
         num_best_sparsity[best_cat_sparsity[category]] = num_best_sparsity[best_cat_sparsity[category]] + 1
 
     for item in num_best_sparsity:
@@ -113,7 +114,7 @@ def one_plot(worst, best, data, categories, train_nums, d_out, colors):
     save_plot(d_out)
 
 def save_plot(d_out):
-    save_loc = "plot_drafts/category_errors/error_by_category_original_mix_learned_dout={}_hparamopt_test.pdf".format(d_out)
+    save_loc = "plot_drafts/category_errors/error_by_category_all_cs_dout={}_hparamopt.pdf".format(d_out)
     print("saving to {}...".format(save_loc))
     plt.savefig(save_loc)
                 
