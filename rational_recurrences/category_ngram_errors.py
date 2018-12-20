@@ -12,9 +12,8 @@ def marker_map(sparsity, ngram):
         elif ngram == "2-gram": return "|"
         elif ngram == "1-gram": return "."
         elif ngram == "1-gram,2-gram,3-gram,4-gram": return "*"
-    elif sparsity == "rho_entropy": return "+"
-    elif sparsity == "rho": return "+"
-    elif sparsity == "learned": return "x"
+    elif sparsity == "rho_entropy" or sparsity == "rho" or sparsity == "states": return "+"
+    elif sparsity == "learned" or sparsity == "l1-learned": return "x"
     
 
 
@@ -111,10 +110,15 @@ def one_plot(worst, best, data, categories, train_nums, d_out, colors):
 
     for item in num_best_sparsity:
         print(item, num_best_sparsity[item])
-    save_plot(d_out)
+    save_plot(d_out, categories)
 
-def save_plot(d_out):
-    save_loc = "plot_drafts/category_errors/error_by_category_all_cs_dout={}_hparamopt.pdf".format(d_out)
+def save_plot(d_out, categories):
+    cat_names = ""
+    for cat in categories:
+        cat_names += cat[0:3] + ","
+    cat_names = cat_names[0:len(cat_names) - 1]
+    
+    save_loc = "plot_drafts/category_errors/error_by_category_all_cs_dout={}_categories={}.pdf".format(d_out, cat_names)
     print("saving to {}...".format(save_loc))
     plt.savefig(save_loc)
                 

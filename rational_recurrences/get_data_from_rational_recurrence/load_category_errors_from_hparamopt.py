@@ -12,7 +12,7 @@ np.set_printoptions(edgeitems=3,infstr='inf',
                     suppress=True, threshold=1000, formatter=None)
 
 
-def get_data():
+def get_data(count_num_params = False):
     learned_structures = {}
     worst = 0
     best = 1
@@ -21,17 +21,18 @@ def get_data():
     
     for base in ["", "structure_search/"]:
         for category in categories:
-            #file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category + "only_last_cs/hparam_opt/"
             file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category
-            file_base += "all_cs_and_equal_rho/hparam_opt/" + base
-            file_name_endings = ["*none_*.txt", "*learned_*.txt", "*rho_entropy_*", "*regstrmultofloss=*_*"]
-            for file_name_ending in file_name_endings:
-                file_names = glob.glob(file_base + file_name_ending)
+            file_base += "only_last_cs/hparam_opt/" + base
+            #file_base += "all_cs_and_equal_rho/hparam_opt/" + base
+            
+            filename_endings = ["*none_*.txt", "*learned_*.txt", "*rho_entropy_*", "*regstrmultofloss=*_*"]
+            for filename_ending in filename_endings:
+                filenames = glob.glob(file_base + filename_ending)
 
-                if len(file_names) != 0:
-                    for file_name in file_names:
-                        cur_dev = load_from_file(file_name)
-                        add_point_to_data(data, cur_dev, file_name, category)
+                if len(filenames) != 0:
+                    for filename in filenames:
+                        cur_dev = load_from_file(filename)
+                        add_point_to_data(data, cur_dev, filename, category, count_num_params)
 
                         if cur_dev < best:
                             best = cur_dev
@@ -39,23 +40,24 @@ def get_data():
                             worst = cur_dev
     return data, categories, worst, best, learned_structures
 
-def add_point_to_data(data, point, file_name, category):
+def add_point_to_data(data, point, filename, category, count_num_params):
     try:
-        d_out = re.search('dout=(.+?)_',file_name).group(1)
-        pattern = re.search('pattern=(.+?)_',file_name).group(1)
-        sparsity = re.search('sparsity=(.+?)_',file_name).group(1)
+        d_out = re.search('dout=(.+?)_',filename).group(1)
+        pattern = re.search('pattern=(.+?)_',filename).group(1)
+        sparsity = re.search('sparsity=(.+?)_',filename).group(1)
     except AttributeError:
         print("PROBLEMS!")
         assert False
 
 
-    num_params = count_params(file_name, d_out, pattern)
+    num_params = count_params(filename, d_out, pattern)
     # this is a bit of a hack
     if sparsity == "learned" or sparsity == "l1-learned":
+        d_out = "24"
         pattern = "1-gram,2-gram,3-gram,4-gram"
-        d_out = 24
-    else:
-        d_out = sum([int(x) for x in d_out.split(",")])
+
+    
+    d_out = sum([int(x) for x in d_out.split(",")])
 
     
     if d_out not in data:
@@ -67,42 +69,47 @@ def add_point_to_data(data, point, file_name, category):
     if category not in data[d_out][pattern][sparsity]:
         data[d_out][pattern][sparsity][category] = []
 
-    keep_num_params = False
-    if keep_num_params:
-        data[d_out][pattern][sparsity][category].append((point, num_params))
+    if count_num_params:
+        data[d_out][pattern][sparsity][category].append([point, num_params])
     else:
         data[d_out][pattern][sparsity][category].append(point)
 
 # note this will have problems!
-def count_params(file_name, d_out, pattern):
-    if "rho-entropy" in file_name.split("/")[-1] or "regstrmultofloss" in file_name.split("/")[-1]:
+def count_params(filename, d_out, pattern):
+    if "rho_entropy" in filename.split("/")[-1] or "regstrmultofloss" in filename.split("/")[-1]:
         
         ngram_counts = [0,0,0,0]
-        if "rho-entropy" in file_name:
-            pattern, d_out, frac_under_pointnine = load_learned_ngrams.from_file(file_name, .9)
-        elif "regstrmultofloss" in file_name:
-            pattern = load_groups_norms.from_file(file_name)
+        if "rho_entropy" in filename:
+            pattern, d_out, frac_under_pointnine = load_learned_ngrams.from_file(filename, .9)
+        elif "regstrmultofloss" in filename:
+
+            d_out = load_groups_norms.from_file(filename = filename)
+            pattern = "1-gram,2-gram,3-gram,4-gram"
+            
 
         split_pattern = pattern.split(",")
         split_d_out = d_out.split(",")
-
+        
         assert len(split_pattern) == len(split_d_out)
         for i in range(len(split_pattern)):
             # to get the cur ngram num
             cur_ngram_num = int(split_pattern[i].split("-")[0]) - 1
             ngram_counts[cur_ngram_num] = int(split_d_out[i])
+        split_pattern = ['1-gram', '2-gram', '3-gram', '4-gram']
         
 
     else:
+        split_pattern = pattern.split(",")
         ngram_counts = d_out.split(",")
 
+    assert len(split_pattern) == len(ngram_counts)
     num_params = 0
     for i in range(len(ngram_counts)):
-        num_params = num_params + (i + 1) * int(ngram_counts[i])
+        num_params = num_params + int(split_pattern[i].split("-")[0]) * int(ngram_counts[i])
 
 
-    if "learned" in file_name:
-        print(pattern, d_out, num_params)
+    #if "learned" in filename:
+    #    print(pattern, d_out, num_params)
     return num_params
     
 def try_load_data(data, category, **kwargs):
@@ -161,7 +168,7 @@ def load_from_file(path):
     return float(err.split(" ")[1])
 
 if __name__ == "__main__":
-    data, categories, worst, best, learned_structures = get_data()
+    data, categories, worst, best, learned_structures = get_data(True)
 
     print("")
 
