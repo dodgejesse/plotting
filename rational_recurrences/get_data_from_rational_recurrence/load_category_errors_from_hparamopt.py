@@ -83,7 +83,7 @@ def count_params(filename, d_out, pattern):
             pattern, d_out, frac_under_pointnine = load_learned_ngrams.from_file(filename, .9)
         elif "regstrmultofloss" in filename:
 
-            d_out = load_groups_norms.from_file(filename = filename)
+            d_out, total_params = load_groups_norms.from_file(filename = filename)
             pattern = "1-gram,2-gram,3-gram,4-gram"
             
 

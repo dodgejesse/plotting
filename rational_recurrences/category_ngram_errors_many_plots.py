@@ -18,7 +18,6 @@ def marker_map(sparsity, ngram):
 def main():
     data, categories, worst, best, learned_structures = load_errors.get_data(count_num_params=True)
     formatted_data = format_data(data, categories)
-    import pdb; pdb.set_trace()
     for d_out in [24]:#[["24", "6,6,6,6"],["256","64,64,64,64"]]:
         one_plot(worst, best, formatted_data, categories, d_out=d_out)
 
@@ -70,11 +69,11 @@ def one_plot(worst, best, data, categories, d_out):
 
 
     #plt.ylim((best-0.01, worst))
-
+    subplot_dim = int(np.ceil(np.sqrt(len(categories))))
     counter = 0
     for category in categories:
         counter += 1 
-        cur_ax = fig.add_subplot(2,2,counter)
+        cur_ax = fig.add_subplot(subplot_dim,subplot_dim,counter)
         cur_ax.set_yscale("log")
         for experiment in data[category]["experiments"]:
             
@@ -89,14 +88,22 @@ def one_plot(worst, best, data, categories, d_out):
 
             
         cur_ax.set_title(category)
-        cur_ax.set_ylim([.08,.15])
-        if counter == 2 or counter == 4:
-            cur_ax.set_yticks([])
+        #cur_ax.set_ylim([.08,.15])
+        #if counter == 2 or counter == 4:
+        #    cur_ax.set_yticklabels([])
 
-        if counter == 1 or counter == 2:
-            cur_ax.set_xticks([])
+        #if counter == 1 or counter == 2:
+        #    cur_ax.set_xticks([])
 
+        #if counter == 3:
+        #    cur_ax.set_ylabel("Error")
+        #    cur_ax.set_xlabel("Total number of states")
+
+    #fig.text(0.5, 0.04, 'Total number of WFSA states', ha='center')
+    #fig.text(0.01, 0.5, 'Error on four datasets (lower is better)', va='center', rotation='vertical')
+    plt.tight_layout()
     save_plot(d_out, categories)
+    
 
 def save_plot(d_out, categories):
     cat_names = ""
