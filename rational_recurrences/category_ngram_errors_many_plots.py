@@ -57,8 +57,12 @@ def format_data(data, categories):
     pattern_and_sparsity = set()
     for category in categories:
         new_data[category] = {}
-        for experiment in ["baselines", "learned", "baseline_mixed"]:#, "regularized"]:
-            new_data[category][experiment] = {"x" : [0,0,0,0], "y": [0,0,0,0], "xerr": [0,0,0,0], "yerr":[0,0,0,0]}
+        #for experiment in ["baselines", "learned", "baseline_mixed"]:#, "regularized"]:
+        #    new_data[category][experiment] = {"x" : [0,0,0,0], "y": [0,0,0,0], "xerr": [0,0,0,0], "yerr":[0,0,0,0]}
+
+        new_data[category]["baselines"] = {"x" : [0,0,0,0,0], "y": [0,0,0,0,0], "xerr": [0,0,0,0,0], "yerr":[0,0,0,0,0]}
+        new_data[category]["learned"] = {"x" : [0,0,0,0], "y": [0,0,0,0], "xerr": [0,0,0,0], "yerr":[0,0,0,0]}
+
         new_data[category]["experiments"] = {}
         
         format_one_category(data, category, new_data[category])
@@ -82,13 +86,18 @@ def format_one_category(data, category, new_data):
                 
 def add_one_point(avg, std_dev, avg_num_params, std_dev_num_params, pattern, sparsity, new_data):
     if sparsity == "none" and pattern in ["1-gram","2-gram","3-gram","4-gram"]:
-        cur_ngram = int(pattern[0]) - 1
-        add_one_point_helper(avg, std_dev, avg_num_params, std_dev_num_params, new_data["baselines"], cur_ngram)
+        position = int(pattern[0]) - 1
+        # to account for the even mix baseline
+        if position > 1:
+            position = position + 1
+        add_one_point_helper(avg, std_dev, avg_num_params, std_dev_num_params, new_data["baselines"], position)
     elif "learned_goalparams" in sparsity:
         position = int(int(sparsity[-2])/2) - 1
         add_one_point_helper(avg, std_dev, avg_num_params, std_dev_num_params, new_data["learned"], position)
     elif sparsity == "none" and pattern == "1-gram,2-gram,3-gram,4-gram":
-        new_data['baseline_mixed'] = {"x": [avg_num_params], "xerr": [0], "y": [avg], "yerr": [std_dev]}
+        position = 2
+        add_one_point_helper(avg, std_dev, avg_num_params, std_dev_num_params, new_data["baselines"], position)
+        #new_data['baseline_mixed'] = {"x": [avg_num_params], "xerr": [0], "y": [avg], "yerr": [std_dev]}
 
     # this elif shouldn't happen now, since we're not plotting this
     elif "states_goalparams" in sparsity:
@@ -136,7 +145,7 @@ def one_plot(worst, best, data, categories, d_out):
                 
             #import pdb; pdb.set_trace()
         
-        for experiment in ["baselines", "learned", "baseline_mixed"]: #, "regularized"]:
+        for experiment in ["baselines", "learned"]: #, "regularized"]:
             #if category == "original_mix/":
             #    import pdb; pdb.set_trace()
             cur_data = data[category][experiment]
@@ -150,14 +159,17 @@ def one_plot(worst, best, data, categories, d_out):
             if max(cur_data["y"]) > cur_best:
                 cur_best = max(cur_data["y"])
 
-            if experiment == "baseline_mixed":
+            if not experiment == "baselines":
                 #color = line[0].get_color()
                 color = None
+                linestyle = "--"
             else:
                 color = None
+                linestyle = "-"
             line = cur_ax.errorbar(cur_data["x"], cur_data["y"],
                                    yerr=cur_data["yerr"], xerr=cur_data["xerr"], marker=marker, alpha=0.75, markersize=0.5,
-                                   color=color)
+                                   linestyle=linestyle)
+                                   #color=color)
 
                 
                             #fmt="o", alpha=0.5, marker=marker, color=color)

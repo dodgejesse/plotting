@@ -1,8 +1,7 @@
 import sys
 sys.path.append('/home/jessedd/projects/rational-recurrences/classification')
 from experiment_params import ExperimentParams, get_categories
-import load_learned_ngrams
-import load_groups_norms
+import load_learned_structure
 import numpy as np
 import os, re
 import glob
@@ -17,20 +16,26 @@ def get_data(count_num_params = False):
     worst = 0
     best = 1
     data = {}
-    categories = get_categories()
-    
-    for base in ["", "structure_search/"]:
+    categories = ["kitchen_&_housewares/","dvd/", "books/", "original_mix/"] # get_categories()
+    visited_files = []
+    for base in ["", "structure_search/add_reg_term_to_loss/"]:
         for category in categories:
             file_base = "/home/jessedd/projects/rational-recurrences/classification/logging/amazon_categories/" + category
-            file_base += "only_last_cs/hparam_opt/" + base
-            #file_base += "all_cs_and_equal_rho/hparam_opt/" + base
+            #file_base += "only_last_cs/hparam_opt/" + base
+            file_base += "all_cs_and_equal_rho/hparam_opt/" + base
             
-            filename_endings = ["*none_*.txt", "*learned_*.txt", "*rho_entropy_*", "*regstrmultofloss=*_*"]
+            filename_endings = ["*none_*.txt", "*learned_*.txt", "*rho_entropy_*", "*regstrmultofloss=*_*", "*goalparams=*_*"]
             for filename_ending in filename_endings:
+                #if "goalparams" in filename_ending:
+                #    import pdb; pdb.set_trace()
                 filenames = glob.glob(file_base + filename_ending)
-
+                
                 if len(filenames) != 0:
                     for filename in filenames:
+                        if not valid_filename(filename, visited_files):
+                            continue
+                        #if "1-gram,2-gram,3-gram,4-gram_sparsity=l1-states-learned_goalparam" in filename and not "books" in filename:
+                        #    import pdb; pdb.set_trace()
                         cur_dev = load_from_file(filename)
                         add_point_to_data(data, cur_dev, filename, category, count_num_params)
 
@@ -39,6 +44,16 @@ def get_data(count_num_params = False):
                         if cur_dev > worst:
                             worst = cur_dev
     return data, categories, worst, best, learned_structures
+
+def valid_filename(filename, visited_files):
+    if (filename.endswith(
+        "_0.txt") or filename.endswith(
+            "_1.txt") or filename.endswith(
+                "_2.txt") or filename.endswith("_3.txt") or filename.endswith("_4.txt")) and filename not in visited_files:
+        visited_files.append(filename)
+        return True
+    return False
+        
 
 def add_point_to_data(data, point, filename, category, count_num_params):
     try:
@@ -49,13 +64,18 @@ def add_point_to_data(data, point, filename, category, count_num_params):
         print("PROBLEMS!")
         assert False
 
+    if "goalparams" in filename:
+        goalparams = re.search('goalparams=(.+?)_',filename).group(1)
+        sparsity += "_goalparams=" + goalparams
 
     num_params = count_params(filename, d_out, pattern)
     # this is a bit of a hack
-    if sparsity == "learned" or sparsity == "l1-learned":
+    #if sparsity == "learned" or sparsity == "l1-learned" or sparsity == "l1-states-learned":
+    if "learned" in sparsity:
         d_out = "24"
         pattern = "1-gram,2-gram,3-gram,4-gram"
 
+        
     
     d_out = sum([int(x) for x in d_out.split(",")])
 
@@ -76,14 +96,14 @@ def add_point_to_data(data, point, filename, category, count_num_params):
 
 # note this will have problems!
 def count_params(filename, d_out, pattern):
-    if "rho_entropy" in filename.split("/")[-1] or "regstrmultofloss" in filename.split("/")[-1]:
+    if "rho_entropy" in filename.split("/")[-1] or "regstrmultofloss" in filename.split("/")[-1] or "states" in filename.split("/")[-1]:
         
         ngram_counts = [0,0,0,0]
         if "rho_entropy" in filename:
-            pattern, d_out, frac_under_pointnine = load_learned_ngrams.from_file(filename, .9)
-        elif "regstrmultofloss" in filename:
-
-            d_out, total_params = load_groups_norms.from_file(filename = filename)
+            pattern, d_out, frac_under_pointnine = load_learned_structure.entropy_rhos(filename, .9)
+        elif "regstrmultofloss" in filename or "sparsity=states_" in filename:
+            prox = "prox" in filename
+            d_out, total_params = load_learned_structure.l1_group_norms(filename = filename, prox=prox)
             pattern = "1-gram,2-gram,3-gram,4-gram"
             
 
