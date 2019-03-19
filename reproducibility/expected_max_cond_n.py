@@ -11,13 +11,16 @@ data_sizes = [200,500,2500,5000,10000]
 classifiers = ['cnn', 'lr', 'lstm', 'boe']
 
 def main():
-    data = samplemax.compute_sample_maxes()
-    fig = plt.figure()
+    for with_replacement in [True, False]:
+        for data_name in ["ag_news", "imdb"]:
+            data = samplemax.compute_sample_maxes(data_name, with_replacement)
+            fig = plt.figure()
+            
+            for i in range(len(data_sizes)):
+                one_plot(data[data_sizes[i]], data_sizes[i], i+1, fig)
 
-    for i in range(len(data_sizes)):
-        one_plot(data[data_sizes[i]], data_sizes[i], i+1, fig)
-
-    save_plot(data_sizes, classifiers)
+            save_plot(data_sizes, classifiers, data_name, with_replacement)
+        
 
 def one_plot(data, data_size, plot_counter, fig):
 
@@ -30,8 +33,8 @@ def one_plot(data, data_size, plot_counter, fig):
             
     cur_ax.set_title(data_size)
 
-    if plot_counter == 1:
-        cur_ax.legend()
+    if plot_counter == 5:
+        cur_ax.legend(bbox_to_anchor=(1,0,.5,1))
     
     plt.tight_layout()
 
@@ -40,12 +43,12 @@ def one_plot(data, data_size, plot_counter, fig):
 
 
 
-def save_plot(data_sizes, classifiers):
+def save_plot(data_sizes, classifiers, data_name, with_replacement):
     sizes = cat_list(data_sizes)
     cs = cat_list(classifiers)
     
     
-    save_loc = "plot_drafts/{}_{}.pdf".format(sizes, cs)
+    save_loc = "plot_drafts/{}_{}_{}_replacement={}.pdf".format(data_name,sizes, cs, with_replacement)
     print("saving to {}...".format(save_loc))
     plt.savefig(save_loc)
 
