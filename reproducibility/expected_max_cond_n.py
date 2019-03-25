@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/home/jessedd/projects/reproducibility")
+sys.path.append("/home/jessedd/projects/reproducibility/scripts")
 import samplemax
 import matplotlib
 matplotlib.use('Agg')
@@ -7,12 +7,14 @@ import matplotlib.pyplot as plt
 
 
 
-data_sizes = [200,500,2500,5000,10000]
-classifiers = ['cnn', 'lr', 'lstm', 'boe']
+#data_sizes = [200,500,2500,5000,10000]
+data_sizes = [32]
+#classifiers = ['cnn', 'linear', 'lstm', 'boe']
+classifiers = ['cnn', 'linear', 'lstm']
 
 def main():
     for with_replacement in [True, False]:
-        for data_name in ["ag_news", "imdb"]:
+        for data_name in ["sst_fiveway"]: #["ag_news", "imdb"]:
             data = samplemax.compute_sample_maxes(data_name, with_replacement)
             fig = plt.figure()
             
@@ -25,16 +27,16 @@ def main():
 def one_plot(data, data_size, plot_counter, fig):
 
 
-    cur_ax = fig.add_subplot(3,3,plot_counter)
+    cur_ax = fig.add_subplot(1,1,plot_counter)
     for classifier in classifiers:
         
-        cur_data = data[classifier]
+        cur_data = data[classifier][0:200]
         line = cur_ax.plot(cur_data, label=classifier)
             
     cur_ax.set_title(data_size)
 
-    if plot_counter == 5:
-        cur_ax.legend(bbox_to_anchor=(1,0,.5,1))
+    #if plot_counter == 5:
+    cur_ax.legend(bbox_to_anchor=(1,0,.5,1))
     
     plt.tight_layout()
 
