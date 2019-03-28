@@ -8,20 +8,23 @@ import matplotlib.pyplot as plt
 
 
 #data_sizes = [200,500,2500,5000,10000]
-data_sizes = [32]
+#data_sizes = [10000]
 #classifiers = ['cnn', 'linear', 'lstm', 'boe']
-classifiers = ['cnn', 'linear', 'lstm']
+classifiers = ['seq2seq', 'seq2vec']
+#classifiers = ['cnn', 'linear', 'lstm']
 
 def main():
-    for with_replacement in [True, False]:
-        for data_name in ["sst_fiveway"]: #["ag_news", "imdb"]:
+    for with_replacement in [True]:
+        for data_name in ["battle_year"]: #["ag_news", "imdb", "sst_fiveway_glove", "hatespeech_10k"]:
             data = samplemax.compute_sample_maxes(data_name, with_replacement)
             fig = plt.figure()
-            
-            for i in range(len(data_sizes)):
-                one_plot(data[data_sizes[i]], data_sizes[i], i+1, fig)
 
-            save_plot(data_sizes, classifiers, data_name, with_replacement)
+            counter = 0
+            for data_size in data:
+                counter += 1
+                one_plot(data[data_size], data_size, counter, fig)
+
+            save_plot(data.keys(), classifiers, data_name, with_replacement)
         
 
 def one_plot(data, data_size, plot_counter, fig):
@@ -33,9 +36,9 @@ def one_plot(data, data_size, plot_counter, fig):
         cur_data = data[classifier][0:200]
         line = cur_ax.plot(cur_data, label=classifier)
             
-    cur_ax.set_title(data_size)
+    #cur_ax.set_title(data_size)
 
-    #if plot_counter == 5:
+    
     cur_ax.legend(bbox_to_anchor=(1,0,.5,1))
     
     plt.tight_layout()
