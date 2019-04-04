@@ -1,4 +1,5 @@
 import sys
+import expected_max_cond_n
 sys.path.append("/home/jessedd/projects/reproducibility/scripts")
 import load_data
 import matplotlib
@@ -10,41 +11,49 @@ import matplotlib.pyplot as plt
 #data_sizes = [200,500,2500,5000,10000]
 #data_sizes = [10000]
 #classifiers = ['cnn', 'linear', 'lstm', 'boe']
-#classifiers = ['cnn', 'linear', 'lstm', 'boe']
-classifiers = ['seq2seq', 'seq2vec']
+#classifiers = ['seq2seq', 'seq2vec']
 #classifiers = ['cnn', 'linear', 'lstm']
 
 def main():
-    for data_name in ["battle_year"]: #["ag_news", "imdb", "hatespeech_10k"]:
-        unformatted_data = load_data.from_file(data_name, True)[1]
-        
-        data = format_data(unformatted_data)
+    data_name = "sst5" #["ag_news", "imdb", "hatespeech_10k"]:
 
-        import pdb; pdb.set_trace()
-        
+    unformatted_data = load_data.from_file(data_name, True)[1]
+    
+    data = format_data(unformatted_data)
+    
+    import pdb; pdb.set_trace()
+    
+    classifiers = expected_max_cond_n.get_classifiers(data)
+    for data_size in data:
+
         fig = plt.figure()
-        
-        for i in range(len(classifiers)):
-            one_plot(data[classifiers[i]], classifiers[i], i+1, fig)
 
-        save_plot([""], classifiers, data_name)
+
+        counter = 0
+        for classifier in classifiers:
+            counter += 1
+            cur_ax = fig.add_subplot(2,2,counter)            
+
+            one_plot(data[data_size][classifier], classifier, cur_ax)
+        
+        save_plot(data_size, classifiers, data_name)
 
 def format_data(u_data):
     data = {}
-    for classifier in u_data:
-        acc = []
-        lr = []
-        u_data[classifier].sort()
-        for example in u_data[classifier]:
-            acc.append(example[1])
-            lr.append(example[0])
-        data[classifier] = {"acc":acc, "lr":lr}
+    for data_size in u_data:
+        data[data_size] = {}
+        for classifier in u_data[data_size]:
+            acc = []
+            lr = []
+            u_data[data_size][classifier].sort()
+            for example in u_data[data_size][classifier]:
+                acc.append(example[1])
+                lr.append(example[0])
+            data[data_size][classifier] = {"acc":acc, "lr":lr}
     return data
 
-def one_plot(data, classifier, plot_counter, fig):
+def one_plot(data, classifier, cur_ax):
 
-
-    cur_ax = fig.add_subplot(2,2,plot_counter)
     cur_ax.set_xscale("log")
     line = cur_ax.scatter(data["lr"], data["acc"])
             
@@ -57,23 +66,12 @@ def one_plot(data, classifier, plot_counter, fig):
 
 
 
-def save_plot(data_sizes, classifiers, data_name):
-    sizes = cat_list(data_sizes)
-    cs = cat_list(classifiers)
+def save_plot(data_size, classifiers, data_name):
+    cs = expected_max_cond_n.cat_list(classifiers)
     
-    
-    save_loc = "plot_drafts/accuracy_lr_plot_{}_{}_{}.pdf".format(data_name,sizes, cs)
+    save_loc = "plot_drafts/accuracy_lr/accuracy_lr_plot_{}_{}_{}.pdf".format(data_name,data_size, cs)
     print("saving to {}...".format(save_loc))
     plt.savefig(save_loc)
-
-
-def cat_list(l):
-    cat_l = ""
-    for cur_l in l:
-        cat_l += str(cur_l) + ","
-    cat_l = cat_l[0:len(cat_l) - 1]
-    return cat_l
-
 
 
 if __name__ == "__main__":
