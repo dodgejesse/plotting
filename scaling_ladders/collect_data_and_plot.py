@@ -1,8 +1,11 @@
+# conda activate /checkpoint/transformer2/envs/amaia_fair-sc_092625/
+
 import os
 import re
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
+from collections import defaultdict
 
 def read_config(config_file_path):
     """Read config.yaml and extract batch_size, steps, and max_seq_len."""
@@ -27,6 +30,14 @@ def read_config(config_file_path):
 
     return batch_size, steps, max_seq_len
 
+def get_num_gpus(filepath):
+    if "295Mparams" in filepath:
+        return 8 # one node
+    elif "603Mparams" in filepath:
+        return 16 # two nodes
+    elif "1Bparams" in filepath:
+        return 4*8
+
 def extract_loss_data(log_file_path, batch_size, max_seq_len):
     """Extract step numbers and loss values from train.log."""
     step_values = []
@@ -44,13 +55,21 @@ def extract_loss_data(log_file_path, batch_size, max_seq_len):
                     step = int(step_match.group(1))
                     loss = float(loss_match.group(1))
 
-                    # Multiply step by batch_size * max_seq_len
-                    adjusted_step = step * batch_size * max_seq_len
+                    # Multiply step by batch_size * max_seq_len * num_gpus
+                    adjusted_step = step * batch_size * max_seq_len * get_num_gpus(log_file_path)
 
                     step_values.append(adjusted_step)
                     loss_values.append(loss)
 
     return step_values, loss_values
+
+def extract_group_key(subdir_name):
+    """Extract the grouping key from subdirectory name (between first '_' and first '-')."""
+    # Find the part after the first '_' and before the first '-'
+    match = re.search(r'_([^-]+)', subdir_name)
+    if match:
+        return match.group(1)
+    return "unknown"
 
 def process_subdirectory(subdir_path, subdir_name):
     """Process a single subdirectory and return its training data."""
@@ -97,49 +116,89 @@ def collect_training_data(base_directory):
 
     return results
 
+def group_results_by_key(results):
+    """Group results by the extracted key from subdirectory names."""
+    grouped = defaultdict(dict)
+
+    for subdir_name, data in results.items():
+        group_key = extract_group_key(subdir_name)
+        grouped[group_key][subdir_name] = data
+
+    return grouped
+
 def plot_training_curves(results, output_file='training_curves.pdf'):
+    """Create and save plot of all training curves with grouped subplots."""
+    # Group results by key
+    grouped_results = group_results_by_key(results)
 
-    #import pdb; pdb.set_trace()
+    # Sort groups alphabetically
+    sorted_groups = sorted(grouped_results.keys())
+    num_groups = len(sorted_groups)
 
+    # Create subplots (arrange in a grid)
+    cols = min(2, num_groups)  # Max 2 columns
+    rows = (num_groups + cols - 1) // cols  # Ceiling division
 
-    """Create and save plot of all training curves."""
-    plt.figure(figsize=(12, 8))
+    fig, axes = plt.subplots(rows, cols, figsize=(14, 6 * rows))
 
-    # Generate distinct colors for each curve
-    sorted_subdirs = sorted(results.keys())
-    num_curves = len(sorted_subdirs)
-    colors = cm.tab20(np.linspace(0, 1, num_curves)) if num_curves <= 20 else cm.viridis(np.linspace(0, 1, num_curves))
+    # Handle case where there's only one subplot
+    if num_groups == 1:
+        axes = np.array([axes])
+    axes = axes.flatten() if num_groups > 1 else axes
 
-    # Plot each training curve
-    for idx, subdir in enumerate(sorted_subdirs):
-        data = results[subdir]
-        step_values = data['steps']
-        loss_values = data['losses']
+    # Plot each group in its own subplot
+    for idx, group_key in enumerate(sorted_groups):
+        ax = axes[idx]
+        group_data = grouped_results[group_key]
 
-        # Plot the training curve with unique color
-        plt.plot(step_values, loss_values, label=subdir, color=colors[idx], alpha=0.7)
+        # Generate distinct colors for curves in this group
+        sorted_subdirs = sorted(group_data.keys())
+        num_curves = len(sorted_subdirs)
+        colors = cm.tab20(np.linspace(0, 1, num_curves)) if num_curves <= 20 else cm.viridis(np.linspace(0, 1, num_curves))
 
-    plt.xlabel('Tokens (Step × Batch Size × Max Seq Len)')
-    plt.ylabel('Loss')
-    plt.title('Training Curves')
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.grid(True, alpha=0.3)
+        # Plot each curve in this group
+        for curve_idx, subdir in enumerate(sorted_subdirs):
+            data = group_data[subdir]
+            step_values = data['steps']
+            loss_values = data['losses']
+
+            if "bszCrit" in subdir:
+                cur_label = f"{subdir}={data['batch_size']}"
+            else:
+                cur_label = subdir
+
+            # Plot the training curve with unique color
+            ax.plot(step_values, loss_values, label=cur_label, color=colors[curve_idx], alpha=0.7)
+
+        ax.set_xlabel('Tokens (Step × Batch Size × Max Seq Len)')
+        ax.set_ylabel('Loss')
+        ax.set_title(f'Training Curves - {group_key}')
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
+
+    # Hide any unused subplots
+    for idx in range(num_groups, len(axes)):
+        axes[idx].axis('off')
+
     plt.tight_layout()
 
     # Save to PDF
-    plt.savefig(output_file, format='pdf', bbox_inches='tight')
+    output_dir = "./plots/"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    plt.savefig(output_dir + output_file, format='pdf', bbox_inches='tight')
     print(f"Plot saved to {output_file}")
 
 def main():
     # Hardcoded directory path
-    base_directory = "/checkpoint/transformer2/jessedodge/amaia_dumps/scaling_tokens/batch_size_experiments/train/"
+    base_directory = "/checkpoint/transformer2/jessedodge/amaia_dumps/scaling_tokens/varying_model_size/trainV3/"
 
     # Collect training data from all subdirectories
     results = collect_training_data(base_directory)
 
     # Plot and save the results
     if results:
-        plot_training_curves(results)
+        plot_training_curves(results, "vary_model_size_training_curves.pdf")
     else:
         print("No training data found.")
 
