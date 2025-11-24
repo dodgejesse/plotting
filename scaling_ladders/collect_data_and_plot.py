@@ -7,6 +7,13 @@ import matplotlib.cm as cm
 import numpy as np
 from collections import defaultdict
 
+base_directory = "/checkpoint/transformer2/jessedodge/amaia_dumps/scaling_tokens/"
+parent_experiment_name = "varying_model_size"
+experiment_name = "train_with_tp_size=1"
+
+
+sort_alphabetically = False
+
 def read_config(config_file_path):
     """Read config.yaml and extract batch_size, steps, and max_seq_len."""
     batch_size = None
@@ -126,13 +133,28 @@ def group_results_by_key(results):
 
     return grouped
 
+def sort_groups(group_keys):
+    sorted = ["300Mtokens", "1Btokens", "3Btokens", "10Btokens", "30Btokens", "100Btokens"]
+
+    for item in sorted:
+        if item not in group_keys:
+            raise KeyError
+
+    return sorted
+
 def plot_training_curves(results, output_file='training_curves.pdf'):
     """Create and save plot of all training curves with grouped subplots."""
     # Group results by key
     grouped_results = group_results_by_key(results)
 
+    #import pdb;
+    #pdb.set_trace()
+
     # Sort groups alphabetically
-    sorted_groups = sorted(grouped_results.keys())
+    if sort_alphabetically:
+        sorted_groups = sorted(grouped_results.keys())
+    else:
+        sorted_groups = sort_groups(grouped_results.keys())
     num_groups = len(sorted_groups)
 
     # Create subplots (arrange in a grid)
@@ -190,15 +212,14 @@ def plot_training_curves(results, output_file='training_curves.pdf'):
     print(f"Plot saved to {output_file}")
 
 def main():
-    # Hardcoded directory path
-    base_directory = "/checkpoint/transformer2/jessedodge/amaia_dumps/scaling_tokens/varying_model_size/trainV3/"
+    directory_path = f"{base_directory}/{parent_experiment_name}/{experiment_name}/"
 
     # Collect training data from all subdirectories
-    results = collect_training_data(base_directory)
+    results = collect_training_data(directory_path)
 
     # Plot and save the results
     if results:
-        plot_training_curves(results, "vary_model_size_training_curves.pdf")
+        plot_training_curves(results, f"{parent_experiment_name}_{experiment_name}_training_curves.pdf")
     else:
         print("No training data found.")
 
